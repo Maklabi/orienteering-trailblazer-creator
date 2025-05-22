@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MapPin, Trash2, Plus } from 'lucide-react';
+import { ArrowLeft, MapPin, Trash2, Plus, X } from 'lucide-react';
 import { toast } from "sonner";
+import MapComponent from './MapComponent';
 
 interface Beacon {
   id: string;
@@ -21,6 +22,7 @@ interface BeaconManagerProps {
 const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
   const [beacons, setBeacons] = useState<Beacon[]>([]);
   const [isMapOpen, setIsMapOpen] = useState(false);
+  const [mapCenter, setMapCenter] = useState({ lat: 40.4168, lng: -3.7038 }); // Default to Madrid
 
   useEffect(() => {
     loadBeacons();
@@ -38,12 +40,12 @@ const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
     setBeacons(newBeacons);
   };
 
-  const addBeacon = (lat: number, lng: number) => {
+  const addBeacon = (position: { lat: number; lng: number }) => {
     const newBeacon: Beacon = {
       id: Date.now().toString(),
       name: `Baliza ${beacons.length + 1}`,
-      lat,
-      lng,
+      lat: position.lat,
+      lng: position.lng,
       dateAdded: new Date().toLocaleDateString()
     };
     
@@ -58,17 +60,8 @@ const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
     toast.success("Baliza eliminada");
   };
 
-  const openGoogleMaps = () => {
-    setIsMapOpen(true);
-    toast.info("Función de Google Maps simulada - En producción se abriría el mapa real");
-    
-    // Simular la selección de un punto en el mapa
-    setTimeout(() => {
-      const randomLat = 40.4168 + (Math.random() - 0.5) * 0.1;
-      const randomLng = -3.7038 + (Math.random() - 0.5) * 0.1;
-      addBeacon(randomLat, randomLng);
-      setIsMapOpen(false);
-    }, 2000);
+  const toggleMap = () => {
+    setIsMapOpen(!isMapOpen);
   };
 
   return (
@@ -103,14 +96,13 @@ const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-gray-600 text-sm">
-                  Haz clic en el botón para abrir Google Maps y seleccionar una ubicación.
+                  Haz clic en el botón para abrir el mapa de OpenStreetMap y seleccionar una ubicación.
                 </p>
                 <Button 
-                  onClick={openGoogleMaps}
-                  disabled={isMapOpen}
+                  onClick={toggleMap}
                   className="w-full bg-green-600 hover:bg-green-700"
                 >
-                  {isMapOpen ? "Abriendo mapa..." : "Abrir Google Maps"}
+                  {isMapOpen ? "Cerrar Mapa" : "Abrir Mapa"}
                 </Button>
                 
                 <div className="pt-4 border-t">
@@ -126,8 +118,43 @@ const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
             </Card>
           </div>
 
-          {/* Beacons List */}
+          {/* Beacons List and Map */}
           <div className="lg:col-span-2">
+            {isMapOpen && (
+              <Card className="border-2 border-green-200 mb-6">
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-center">
+                    <CardTitle className="flex items-center gap-2 text-green-800">
+                      <MapPin className="w-5 h-5" />
+                      Mapa - Selecciona una ubicación
+                    </CardTitle>
+                    <Button 
+                      variant="ghost"
+                      size="sm"
+                      onClick={toggleMap}
+                      className="h-8 w-8 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-gray-600 mb-2">Haz clic en el mapa para añadir una baliza</p>
+                  <MapComponent 
+                    center={mapCenter} 
+                    zoom={13} 
+                    markers={beacons.map(b => ({
+                      id: b.id,
+                      position: { lat: b.lat, lng: b.lng },
+                      title: b.name
+                    }))}
+                    onMapClick={addBeacon}
+                    className="h-[400px] w-full rounded-md border"
+                  />
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="border-2 border-green-200">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-green-800">
@@ -140,7 +167,7 @@ const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
                   <div className="text-center py-12">
                     <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-semibold text-gray-600 mb-2">No hay balizas guardadas</h3>
-                    <p className="text-gray-500">Comienza añadiendo tu primera baliza usando Google Maps</p>
+                    <p className="text-gray-500">Comienza añadiendo tu primera baliza usando el mapa</p>
                   </div>
                 ) : (
                   <div className="grid gap-4">

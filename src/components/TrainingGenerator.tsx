@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, MapPin, Route, Printer, Settings } from 'lucide-react';
 import { toast } from "sonner";
+import MapComponent from './MapComponent';
 
 interface Beacon {
   id: string;
@@ -25,6 +26,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
   const [numBeacons, setNumBeacons] = useState(5);
   const [generatedTraining, setGeneratedTraining] = useState<Beacon[] | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [mapCenter, setMapCenter] = useState({ lat: 40.4168, lng: -3.7038 }); // Default to Madrid
 
   const generateTraining = async () => {
     if (!location.trim()) {
@@ -35,9 +37,15 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
     setIsGenerating(true);
     
     try {
-      // Simular coordenadas base para la localidad (en producción usaríamos geocoding)
+      // Simulación de geocoding - en producción usaríamos un servicio real
+      // para convertir el nombre de localidad en coordenadas
+      
+      // Para esta demo, utilizamos coordenadas aleatorias basadas en Madrid
+      // con una pequeña variación
       const baseLat = 40.4168 + (Math.random() - 0.5) * 0.1;
       const baseLng = -3.7038 + (Math.random() - 0.5) * 0.1;
+      
+      setMapCenter({ lat: baseLat, lng: baseLng });
 
       // Generar balizas aleatorias en un radio de 2km
       const training: Beacon[] = [];
@@ -58,7 +66,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
         });
       }
 
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simular procesamiento
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simular procesamiento
       
       setGeneratedTraining(training);
       toast.success(`Entrenamiento generado con ${numBeacons} balizas cerca de ${location}`);
@@ -73,8 +81,9 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
   const printTraining = () => {
     if (!generatedTraining) return;
     
-    toast.success("Función de impresión activada - En producción se abriría el diálogo de impresión");
+    // Preparar la vista para impresión
     window.print();
+    toast.success("Preparando para imprimir");
   };
 
   const clearTraining = () => {
@@ -216,14 +225,20 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                       </div>
                     </div>
 
-                    {/* Map Preview */}
-                    <div className="bg-green-50 border-2 border-dashed border-green-300 rounded-lg p-8 text-center">
-                      <MapPin className="w-12 h-12 text-green-600 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-green-800 mb-2">Vista Previa del Mapa</h3>
-                      <p className="text-green-700 mb-4">
-                        Aquí se mostraría el mapa de Google Maps con las {generatedTraining.length} balizas marcadas
-                      </p>
-                      <div className="text-sm text-green-600 bg-white rounded p-2 inline-block">
+                    {/* Map View */}
+                    <div className="bg-white border border-gray-200 rounded-lg p-4">
+                      <h3 className="text-lg font-semibold text-gray-800 mb-2">Mapa de Entrenamiento</h3>
+                      <MapComponent 
+                        center={mapCenter}
+                        zoom={14}
+                        markers={generatedTraining.map((b, index) => ({
+                          id: b.id,
+                          position: { lat: b.lat, lng: b.lng },
+                          title: `Baliza ${index + 1}`
+                        }))}
+                        className="h-[400px] w-full rounded-md border mb-4"
+                      />
+                      <div className="text-sm text-orange-600 bg-orange-50 rounded p-2 inline-block">
                         📍 Región: {location} | Radio: 2km | Balizas: {generatedTraining.length}
                       </div>
                     </div>
