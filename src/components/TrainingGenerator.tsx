@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,15 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
   const [generatedTraining, setGeneratedTraining] = useState<Beacon[] | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [mapCenter, setMapCenter] = useState({ lat: 40.4168, lng: -3.7038 }); // Default to Madrid
+  const [savedBeacons, setSavedBeacons] = useState<Beacon[]>([]);
+
+  // Load all saved beacons on component mount
+  useEffect(() => {
+    const beaconsFromStorage = localStorage.getItem('orientatrainer-beacons');
+    if (beaconsFromStorage) {
+      setSavedBeacons(JSON.parse(beaconsFromStorage));
+    }
+  }, []);
 
   const generateTraining = async () => {
     if (!location.trim()) {
@@ -34,44 +43,54 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
       return;
     }
 
+    if (savedBeacons.length === 0) {
+      toast.error("No hay balizas guardadas. Añade balizas en la sección 'Gestionar Balizas' primero.");
+      return;
+    }
+
+    if (savedBeacons.length < numBeacons) {
+      toast.warning(`Solo hay ${savedBeacons.length} balizas disponibles. Se usarán todas.`);
+    }
+
     setIsGenerating(true);
     
     try {
-      // Simulación de geocoding - en producción usaríamos un servicio real
-      // para convertir el nombre de localidad en coordenadas
+      // Try to geocode the location to center the map there
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`);
+      const data = await response.json();
       
-      // Para esta demo, utilizamos coordenadas aleatorias basadas en Madrid
-      // con una pequeña variación
-      const baseLat = 40.4168 + (Math.random() - 0.5) * 0.1;
-      const baseLng = -3.7038 + (Math.random() - 0.5) * 0.1;
+      let centerPoint = { lat: 40.4168, lng: -3.7038 }; // Default to Madrid
       
-      setMapCenter({ lat: baseLat, lng: baseLng });
-
-      // Generar balizas aleatorias en un radio de 2km
-      const training: Beacon[] = [];
-      for (let i = 0; i < numBeacons; i++) {
-        // Generar punto aleatorio en radio de 2km (aproximadamente 0.018 grados)
-        const angle = Math.random() * 2 * Math.PI;
-        const distance = Math.random() * 0.018; // Aprox 2km en grados
-        
-        const lat = baseLat + distance * Math.cos(angle);
-        const lng = baseLng + distance * Math.sin(angle);
-        
-        training.push({
-          id: `training-${i + 1}`,
-          name: `Baliza ${i + 1}`,
-          lat,
-          lng,
-          dateAdded: new Date().toLocaleDateString()
-        });
+      if (data && data.length > 0) {
+        const { lat, lon } = data[0];
+        centerPoint = {
+          lat: parseFloat(lat),
+          lng: parseFloat(lon)
+        };
       }
-
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simular procesamiento
       
-      setGeneratedTraining(training);
-      toast.success(`Entrenamiento generado con ${numBeacons} balizas cerca de ${location}`);
+      setMapCenter(centerPoint);
+
+      // Instead of random beacons, we'll select from the saved beacons
+      // If we have more beacons than needed, randomly select from them
+      const beaconsToUse = [...savedBeacons];
+      
+      // Shuffle the array to get random beacons each time
+      for (let i = beaconsToUse.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [beaconsToUse[i], beaconsToUse[j]] = [beaconsToUse[j], beaconsToUse[i]];
+      }
+      
+      // Take only the number needed or all if we have fewer
+      const finalBeacons = beaconsToUse.slice(0, Math.min(numBeacons, beaconsToUse.length));
+      
+      await new Promise(resolve => setTimeout(resolve, 500)); // Small delay for UX
+      
+      setGeneratedTraining(finalBeacons);
+      toast.success(`Entrenamiento generado con ${finalBeacons.length} balizas en ${location}`);
       
     } catch (error) {
+      console.error("Error generating training:", error);
       toast.error("Error al generar el entrenamiento");
     } finally {
       setIsGenerating(false);
@@ -106,7 +125,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">Generar Entrenamiento</h1>
-            <p className="text-orange-100">Crea entrenamientos automáticos basados en localidad</p>
+            <p className="text-orange-100">Crea entrenamientos usando tus balizas guardadas</p>
           </div>
         </div>
       </header>
@@ -133,7 +152,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                     className="mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Introduce el nombre de la localidad base
+                    Introduce el nombre de la localidad para centrar el mapa
                   </p>
                 </div>
 
@@ -145,21 +164,41 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                     min="3"
                     max="15"
                     value={numBeacons}
-                    onChange={(e) => setNumBeacons(parseInt(e.target.value) || 5)}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 3;
+                      setNumBeacons(Math.min(Math.max(value, 3), 15));
+                    }}
                     className="mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Entre 3 y 15 balizas por entrenamiento
+                    Entre 3 y 15 balizas por entrenamiento (máx: {savedBeacons.length} disponibles)
                   </p>
+                </div>
+
+                <div className="pt-2 pb-2 border-t border-b border-gray-200">
+                  <div className="flex justify-between text-sm text-gray-600 font-medium">
+                    <span>Balizas disponibles:</span>
+                    <span className={savedBeacons.length > 0 ? "text-green-600" : "text-red-600"}>
+                      {savedBeacons.length}
+                    </span>
+                  </div>
                 </div>
 
                 <Button 
                   onClick={generateTraining}
-                  disabled={isGenerating}
+                  disabled={isGenerating || savedBeacons.length === 0}
                   className="w-full bg-orange-600 hover:bg-orange-700"
                 >
                   {isGenerating ? "Generando..." : "Generar Entrenamiento"}
                 </Button>
+
+                {savedBeacons.length === 0 && (
+                  <div className="text-center p-2 bg-orange-50 border border-orange-200 rounded-md">
+                    <p className="text-sm text-orange-800">
+                      Necesitas añadir balizas en la sección "Gestionar Balizas" antes de poder generar entrenamientos.
+                    </p>
+                  </div>
+                )}
 
                 {generatedTraining && (
                   <div className="pt-4 border-t space-y-2">
@@ -215,8 +254,8 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                           <span className="ml-2 font-semibold">{generatedTraining.length}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600">Radio:</span>
-                          <span className="ml-2 font-semibold">2 km</span>
+                          <span className="text-gray-600">Fuente:</span>
+                          <span className="ml-2 font-semibold">Balizas guardadas</span>
                         </div>
                         <div>
                           <span className="text-gray-600">Generado:</span>
@@ -239,7 +278,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                         className="h-[400px] w-full rounded-md border mb-4"
                       />
                       <div className="text-sm text-orange-600 bg-orange-50 rounded p-2 inline-block">
-                        📍 Región: {location} | Radio: 2km | Balizas: {generatedTraining.length}
+                        📍 Entrenamiento en: {location} | Balizas: {generatedTraining.length}
                       </div>
                     </div>
 
