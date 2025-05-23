@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -17,6 +18,7 @@ interface MapComponentProps {
   }>;
   onMapClick?: (position: MapPosition) => void;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 const MapComponent: React.FC<MapComponentProps> = ({
@@ -24,7 +26,8 @@ const MapComponent: React.FC<MapComponentProps> = ({
   zoom,
   markers = [],
   onMapClick,
-  className = "h-[400px] w-full"
+  className = "h-[400px] w-full",
+  style
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<L.Map | null>(null);
@@ -106,7 +109,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   }, [markers]);
 
   return (
-    <div ref={mapRef} className={className} />
+    <div ref={mapRef} className={className} style={style} />
   );
 };
 

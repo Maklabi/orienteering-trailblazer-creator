@@ -187,49 +187,12 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
     setIsPrintMode(true);
     
     setTimeout(() => {
-      const printStyles = `
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          .print-container, .print-container * {
-            visibility: visible;
-          }
-          .print-container {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            padding: 20px;
-            box-sizing: border-box;
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
-      `;
-
-      const existingStyles = document.getElementById('print-styles');
-      if (existingStyles) {
-        existingStyles.remove();
-      }
-
-      const styleElement = document.createElement('style');
-      styleElement.id = 'print-styles';
-      styleElement.textContent = printStyles;
-      document.head.appendChild(styleElement);
-
       window.print();
-      
       setTimeout(() => {
         setIsPrintMode(false);
-        if (styleElement) {
-          styleElement.remove();
-        }
       }, 1000);
-      
       toast.success("Preparando para imprimir");
-    }, 100);
+    }, 500);
   };
 
   const clearTraining = () => {
@@ -249,26 +212,57 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
 
   if (isPrintMode && generatedTraining) {
     return (
-      <div className="print-container">
-        <div style={{ textAlign: 'center', marginBottom: '20px', fontFamily: 'Arial, sans-serif' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#ea580c', marginBottom: '10px' }}>
-            Entrenamiento de Orientación - {location}
-          </h1>
-          <div style={{ fontSize: '16px', color: '#374151', marginBottom: '20px' }}>
-            Balizas: {generatedTraining.length} | Distancia máxima entre balizas: {maxDistanceBetweenBeacons}m
+      <div className="p-8 bg-white">
+        <style>
+          {`
+            @media print {
+              body * {
+                visibility: hidden;
+              }
+              .print-container, .print-container * {
+                visibility: visible;
+              }
+              .print-container {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 20px;
+                box-sizing: border-box;
+              }
+              @page {
+                margin: 20px;
+                size: A4;
+              }
+            }
+          `}
+        </style>
+        <div className="print-container">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl font-bold text-orange-600 mb-4">
+              Entrenamiento de Orientación - {location}
+            </h1>
+            <div className="text-lg text-gray-700 space-y-2">
+              <div>Número de balizas: <strong>{generatedTraining.length}</strong></div>
+              <div>Distancia máxima entre balizas: <strong>{maxDistanceBetweenBeacons}m</strong></div>
+              <div>Fecha: <strong>{new Date().toLocaleDateString('es-ES')}</strong></div>
+            </div>
           </div>
+          <MapComponent 
+            center={mapBounds.center}
+            zoom={mapBounds.zoom}
+            markers={generatedTraining.map((b, index) => ({
+              id: b.id,
+              position: { lat: b.lat, lng: b.lng },
+              title: `Baliza ${index + 1}: ${b.name}`
+            }))}
+            className="w-full border-2 border-orange-500 rounded-lg"
+            style={{ 
+              height: 'calc(100vh - 300px)', 
+              minHeight: '500px'
+            }}
+          />
         </div>
-        <MapComponent 
-          center={mapBounds.center}
-          zoom={mapBounds.zoom}
-          markers={generatedTraining.map((b, index) => ({
-            id: b.id,
-            position: { lat: b.lat, lng: b.lng },
-            title: `Baliza ${index + 1}: ${b.name}`
-          }))}
-          className="w-full"
-          style={{ height: 'calc(100vh - 160px)', border: '2px solid #ea580c', borderRadius: '8px' }}
-        />
       </div>
     );
   }
