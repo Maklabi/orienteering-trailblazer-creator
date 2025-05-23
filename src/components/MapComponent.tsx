@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -36,7 +35,15 @@ const MapComponent: React.FC<MapComponentProps> = ({
     if (!mapRef.current || leafletMapRef.current) return;
 
     // Create map instance
-    const map = L.map(mapRef.current).setView([center.lat, center.lng], zoom);
+    const map = L.map(mapRef.current, {
+      // Disable zoom on click
+      doubleClickZoom: false,
+      // Keep other zoom controls available
+      scrollWheelZoom: true,
+      boxZoom: true,
+      keyboard: true,
+      zoomControl: true
+    }).setView([center.lat, center.lng], zoom);
     
     // Add OSM tile layer
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -49,6 +56,10 @@ const MapComponent: React.FC<MapComponentProps> = ({
     // Add click handler if provided
     if (onMapClick) {
       map.on('click', (e) => {
+        // Prevent default behavior and stop propagation
+        e.originalEvent.preventDefault();
+        e.originalEvent.stopPropagation();
+        
         const position = {
           lat: e.latlng.lat,
           lng: e.latlng.lng

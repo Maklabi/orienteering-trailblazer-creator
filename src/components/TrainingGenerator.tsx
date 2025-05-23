@@ -24,6 +24,7 @@ interface TrainingGeneratorProps {
 const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
   const [location, setLocation] = useState('');
   const [numBeacons, setNumBeacons] = useState(5);
+  const [maxDistance, setMaxDistance] = useState(500); // New state for max distance in meters
   const [generatedTraining, setGeneratedTraining] = useState<Beacon[] | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [mapCenter, setMapCenter] = useState({ lat: 40.4168, lng: -3.7038 }); // Default to Madrid
@@ -37,6 +38,27 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
     }
   }, []);
 
+  // Function to calculate distance between two points in meters
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371000; // Earth's radius in meters
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  // Function to filter beacons within max distance from center
+  const filterBeaconsByDistance = (beacons: Beacon[], center: { lat: number; lng: number }, maxDist: number): Beacon[] => {
+    return beacons.filter(beacon => {
+      const distance = calculateDistance(center.lat, center.lng, beacon.lat, beacon.lng);
+      return distance <= maxDist;
+    });
+  };
+
   const generateTraining = async () => {
     if (!location.trim()) {
       toast.error("Por favor, introduce el nombre de una localidad");
@@ -46,10 +68,6 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
     if (savedBeacons.length === 0) {
       toast.error("No hay balizas guardadas. Añade balizas en la sección 'Gestionar Balizas' primero.");
       return;
-    }
-
-    if (savedBeacons.length < numBeacons) {
-      toast.warning(`Solo hay ${savedBeacons.length} balizas disponibles. Se usarán todas.`);
     }
 
     setIsGenerating(true);
@@ -71,11 +89,21 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
       
       setMapCenter(centerPoint);
 
-      // Instead of random beacons, we'll select from the saved beacons
-      // If we have more beacons than needed, randomly select from them
-      const beaconsToUse = [...savedBeacons];
+      // Filter beacons by distance from center
+      const nearbyBeacons = filterBeaconsByDistance(savedBeacons, centerPoint, maxDistance);
       
+      if (nearbyBeacons.length === 0) {
+        toast.warning(`No se encontraron balizas dentro de ${maxDistance}m de ${location}. Intenta aumentar la distancia máxima.`);
+        setIsGenerating(false);
+        return;
+      }
+
+      if (nearbyBeacons.length < numBeacons) {
+        toast.warning(`Solo hay ${nearbyBeacons.length} balizas disponibles dentro de ${maxDistance}m. Se usarán todas.`);
+      }
+
       // Shuffle the array to get random beacons each time
+      const beaconsToUse = [...nearbyBeacons];
       for (let i = beaconsToUse.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [beaconsToUse[i], beaconsToUse[j]] = [beaconsToUse[j], beaconsToUse[i]];
@@ -87,7 +115,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
       await new Promise(resolve => setTimeout(resolve, 500)); // Small delay for UX
       
       setGeneratedTraining(finalBeacons);
-      toast.success(`Entrenamiento generado con ${finalBeacons.length} balizas en ${location}`);
+      toast.success(`Entrenamiento generado con ${finalBeacons.length} balizas en ${location} (radio: ${maxDistance}m)`);
       
     } catch (error) {
       console.error("Error generating training:", error);
@@ -171,7 +199,26 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                     className="mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Entre 3 y 15 balizas por entrenamiento (máx: {savedBeacons.length} disponibles)
+                    Entre 3 y 15 balizas por entrenamiento
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="maxDistance" className="text-gray-700">Distancia máxima (metros)</Label>
+                  <Input
+                    id="maxDistance"
+                    type="number"
+                    min="100"
+                    max="5000"
+                    value={maxDistance}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 500;
+                      setMaxDistance(Math.min(Math.max(value, 100), 5000));
+                    }}
+                    className="mt-1"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Radio máximo desde el centro de la localidad (100-5000m)
                   </p>
                 </div>
 
@@ -254,8 +301,8 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                           <span className="ml-2 font-semibold">{generatedTraining.length}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600">Fuente:</span>
-                          <span className="ml-2 font-semibold">Balizas guardadas</span>
+                          <span className="text-gray-600">Radio máximo:</span>
+                          <span className="ml-2 font-semibold">{maxDistance}m</span>
                         </div>
                         <div>
                           <span className="text-gray-600">Generado:</span>
