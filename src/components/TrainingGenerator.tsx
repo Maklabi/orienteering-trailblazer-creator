@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -152,8 +151,65 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
   const printTraining = () => {
     if (!generatedTraining) return;
     
-    // Preparar la vista para impresión
+    // Add print styles to the document
+    const printStyles = `
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        .print-area, .print-area * {
+          visibility: visible;
+        }
+        .print-area {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          height: 100vh;
+          background: white;
+          padding: 20px;
+          box-sizing: border-box;
+        }
+        .print-header {
+          text-align: center;
+          margin-bottom: 20px;
+          font-family: Arial, sans-serif;
+        }
+        .print-title {
+          font-size: 24px;
+          font-weight: bold;
+          color: #ea580c;
+          margin-bottom: 10px;
+        }
+        .print-info {
+          font-size: 16px;
+          color: #374151;
+          margin-bottom: 20px;
+        }
+        .print-map {
+          width: 100%;
+          height: calc(100vh - 160px);
+          border: 2px solid #ea580c;
+          border-radius: 8px;
+        }
+      }
+    `;
+
+    // Remove existing print styles
+    const existingStyles = document.getElementById('print-styles');
+    if (existingStyles) {
+      existingStyles.remove();
+    }
+
+    // Add new print styles
+    const styleElement = document.createElement('style');
+    styleElement.id = 'print-styles';
+    styleElement.textContent = printStyles;
+    document.head.appendChild(styleElement);
+
+    // Trigger print
     window.print();
+    
     toast.success("Preparando para imprimir");
   };
 
@@ -356,6 +412,26 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                       <div className="text-sm text-orange-600 bg-orange-50 rounded p-2 inline-block">
                         📍 Entrenamiento en: {location} | Balizas: {generatedTraining.length} | Máx. distancia entre balizas: {maxDistanceBetweenBeacons}m
                       </div>
+                    </div>
+
+                    {/* Print-only area */}
+                    <div className="print-area" style={{ display: 'none' }}>
+                      <div className="print-header">
+                        <div className="print-title">Entrenamiento de Orientación - {location}</div>
+                        <div className="print-info">
+                          Balizas: {generatedTraining.length} | Distancia máxima entre balizas: {maxDistanceBetweenBeacons}m
+                        </div>
+                      </div>
+                      <MapComponent 
+                        center={mapCenter}
+                        zoom={14}
+                        markers={generatedTraining.map((b, index) => ({
+                          id: b.id,
+                          position: { lat: b.lat, lng: b.lng },
+                          title: `Baliza ${index + 1}: ${b.name}`
+                        }))}
+                        className="print-map"
+                      />
                     </div>
 
                     {/* Beacons List */}
