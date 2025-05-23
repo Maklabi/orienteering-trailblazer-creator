@@ -23,11 +23,12 @@ interface TrainingGeneratorProps {
 const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
   const [location, setLocation] = useState('');
   const [numBeacons, setNumBeacons] = useState(5);
-  const [maxDistanceBetweenBeacons, setMaxDistanceBetweenBeacons] = useState(500); // Distance between consecutive beacons
+  const [maxDistanceBetweenBeacons, setMaxDistanceBetweenBeacons] = useState(500);
   const [generatedTraining, setGeneratedTraining] = useState<Beacon[] | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [mapCenter, setMapCenter] = useState({ lat: 40.4168, lng: -3.7038 }); // Default to Madrid
+  const [mapCenter, setMapCenter] = useState({ lat: 40.4168, lng: -3.7038 });
   const [savedBeacons, setSavedBeacons] = useState<Beacon[]>([]);
+  const [isPrintMode, setIsPrintMode] = useState(false);
 
   // Load all saved beacons on component mount
   useEffect(() => {
@@ -148,69 +149,87 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
     }
   };
 
+  const calculateMapBounds = () => {
+    if (!generatedTraining || generatedTraining.length === 0) {
+      return { center: mapCenter, zoom: 14 };
+    }
+
+    const lats = generatedTraining.map(b => b.lat);
+    const lngs = generatedTraining.map(b => b.lng);
+    
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    
+    const centerLat = (minLat + maxLat) / 2;
+    const centerLng = (minLng + maxLng) / 2;
+    
+    const latDiff = maxLat - minLat;
+    const lngDiff = maxLng - minLng;
+    const maxDiff = Math.max(latDiff, lngDiff);
+    
+    let zoom = 14;
+    if (maxDiff > 0.1) zoom = 10;
+    else if (maxDiff > 0.05) zoom = 12;
+    else if (maxDiff > 0.01) zoom = 14;
+    else zoom = 16;
+    
+    return {
+      center: { lat: centerLat, lng: centerLng },
+      zoom
+    };
+  };
+
   const printTraining = () => {
     if (!generatedTraining) return;
     
-    // Add print styles to the document
-    const printStyles = `
-      @media print {
-        body * {
-          visibility: hidden;
-        }
-        .print-area, .print-area * {
-          visibility: visible;
-        }
-        .print-area {
-          position: absolute;
-          left: 0;
-          top: 0;
-          width: 100%;
-          height: 100vh;
-          background: white;
-          padding: 20px;
-          box-sizing: border-box;
-        }
-        .print-header {
-          text-align: center;
-          margin-bottom: 20px;
-          font-family: Arial, sans-serif;
-        }
-        .print-title {
-          font-size: 24px;
-          font-weight: bold;
-          color: #ea580c;
-          margin-bottom: 10px;
-        }
-        .print-info {
-          font-size: 16px;
-          color: #374151;
-          margin-bottom: 20px;
-        }
-        .print-map {
-          width: 100%;
-          height: calc(100vh - 160px);
-          border: 2px solid #ea580c;
-          border-radius: 8px;
-        }
-      }
-    `;
-
-    // Remove existing print styles
-    const existingStyles = document.getElementById('print-styles');
-    if (existingStyles) {
-      existingStyles.remove();
-    }
-
-    // Add new print styles
-    const styleElement = document.createElement('style');
-    styleElement.id = 'print-styles';
-    styleElement.textContent = printStyles;
-    document.head.appendChild(styleElement);
-
-    // Trigger print
-    window.print();
+    setIsPrintMode(true);
     
-    toast.success("Preparando para imprimir");
+    setTimeout(() => {
+      const printStyles = `
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          .print-container, .print-container * {
+            visibility: visible;
+          }
+          .print-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+          }
+          .no-print {
+            display: none !important;
+          }
+        }
+      `;
+
+      const existingStyles = document.getElementById('print-styles');
+      if (existingStyles) {
+        existingStyles.remove();
+      }
+
+      const styleElement = document.createElement('style');
+      styleElement.id = 'print-styles';
+      styleElement.textContent = printStyles;
+      document.head.appendChild(styleElement);
+
+      window.print();
+      
+      setTimeout(() => {
+        setIsPrintMode(false);
+        if (styleElement) {
+          styleElement.remove();
+        }
+      }, 1000);
+      
+      toast.success("Preparando para imprimir");
+    }, 100);
   };
 
   const clearTraining = () => {
@@ -226,9 +245,36 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
   };
 
   const maxAllowedBeacons = Math.max(1, savedBeacons.length);
+  const mapBounds = calculateMapBounds();
+
+  if (isPrintMode && generatedTraining) {
+    return (
+      <div className="print-container">
+        <div style={{ textAlign: 'center', marginBottom: '20px', fontFamily: 'Arial, sans-serif' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#ea580c', marginBottom: '10px' }}>
+            Entrenamiento de Orientación - {location}
+          </h1>
+          <div style={{ fontSize: '16px', color: '#374151', marginBottom: '20px' }}>
+            Balizas: {generatedTraining.length} | Distancia máxima entre balizas: {maxDistanceBetweenBeacons}m
+          </div>
+        </div>
+        <MapComponent 
+          center={mapBounds.center}
+          zoom={mapBounds.zoom}
+          markers={generatedTraining.map((b, index) => ({
+            id: b.id,
+            position: { lat: b.lat, lng: b.lng },
+            title: `Baliza ${index + 1}: ${b.name}`
+          }))}
+          className="w-full"
+          style={{ height: 'calc(100vh - 160px)', border: '2px solid #ea580c', borderRadius: '8px' }}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50 no-print">
       {/* Header */}
       <header className="bg-orange-800 text-white p-6 shadow-lg">
         <div className="max-w-6xl mx-auto flex items-center gap-4">
@@ -400,8 +446,8 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                     <div className="bg-white border border-gray-200 rounded-lg p-4">
                       <h3 className="text-lg font-semibold text-gray-800 mb-2">Mapa de Entrenamiento</h3>
                       <MapComponent 
-                        center={mapCenter}
-                        zoom={14}
+                        center={mapBounds.center}
+                        zoom={mapBounds.zoom}
                         markers={generatedTraining.map((b, index) => ({
                           id: b.id,
                           position: { lat: b.lat, lng: b.lng },
@@ -412,26 +458,6 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                       <div className="text-sm text-orange-600 bg-orange-50 rounded p-2 inline-block">
                         📍 Entrenamiento en: {location} | Balizas: {generatedTraining.length} | Máx. distancia entre balizas: {maxDistanceBetweenBeacons}m
                       </div>
-                    </div>
-
-                    {/* Print-only area */}
-                    <div className="print-area" style={{ display: 'none' }}>
-                      <div className="print-header">
-                        <div className="print-title">Entrenamiento de Orientación - {location}</div>
-                        <div className="print-info">
-                          Balizas: {generatedTraining.length} | Distancia máxima entre balizas: {maxDistanceBetweenBeacons}m
-                        </div>
-                      </div>
-                      <MapComponent 
-                        center={mapCenter}
-                        zoom={14}
-                        markers={generatedTraining.map((b, index) => ({
-                          id: b.id,
-                          position: { lat: b.lat, lng: b.lng },
-                          title: `Baliza ${index + 1}: ${b.name}`
-                        }))}
-                        className="print-map"
-                      />
                     </div>
 
                     {/* Beacons List */}
