@@ -455,14 +455,6 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                 {generatedTraining && (
                   <div className="pt-4 border-t space-y-2">
                     <Button 
-                      onClick={sendToTelegram}
-                      variant="outline"
-                      className="w-full border-blue-600 text-blue-700 hover:bg-blue-50"
-                    >
-                      <Send className="w-4 h-4 mr-2" />
-                      Enviar Texto por Telegram
-                    </Button>
-                    <Button 
                       onClick={sendMapImageToTelegram}
                       variant="outline"
                       className="w-full border-blue-600 text-blue-700 hover:bg-blue-50"

@@ -33,32 +33,7 @@ const Index = () => {
             <main className="flex-1 flex items-center justify-center p-6">
               <div className="max-w-4xl w-full">
                 <div className="grid md:grid-cols-2 gap-8">
-                  {/* Meter Balizas Card */}
-                  <Card className="group hover:shadow-2xl transition-all duration-300 border-2 border-green-200 hover:border-green-400 bg-white">
-                    <CardContent className="p-8">
-                      <div className="text-center">
-                        <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                          <MapPin className="w-10 h-10 text-white" />
-                        </div>
-                        <h3 className="text-2xl font-bold text-green-800 mb-4">
-                          Gestionar Balizas
-                        </h3>
-                        <p className="text-gray-600 mb-6 leading-relaxed">
-                          Añade y gestiona puntos de control en el mapa. 
-                          Haz clic en ubicaciones específicas para crear tu 
-                          base de datos de balizas.
-                        </p>
-                        <Button 
-                          onClick={() => setCurrentView('beacons')}
-                          className="w-full bg-green-600 hover:bg-green-700 text-white py-3 text-lg font-semibold transition-colors duration-200"
-                        >
-                          Meter Balizas en el Mapa
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Generar Entrenamiento Card */}
+                  {/* Generar Entrenamiento Card - Now First */}
                   <Card className="group hover:shadow-2xl transition-all duration-300 border-2 border-orange-200 hover:border-orange-400 bg-white">
                     <CardContent className="p-8">
                       <div className="text-center">
@@ -78,6 +53,31 @@ const Index = () => {
                           className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 text-lg font-semibold transition-colors duration-200"
                         >
                           Generar Entrenamiento
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Gestionar Balizas Card - Now Second */}
+                  <Card className="group hover:shadow-2xl transition-all duration-300 border-2 border-green-200 hover:border-green-400 bg-white">
+                    <CardContent className="p-8">
+                      <div className="text-center">
+                        <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
+                          <MapPin className="w-10 h-10 text-white" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-green-800 mb-4">
+                          Gestionar Balizas
+                        </h3>
+                        <p className="text-gray-600 mb-6 leading-relaxed">
+                          Añade y gestiona puntos de control en el mapa. 
+                          Haz clic en ubicaciones específicas para crear tu 
+                          base de datos de balizas.
+                        </p>
+                        <Button 
+                          onClick={() => setCurrentView('beacons')}
+                          className="w-full bg-green-600 hover:bg-green-700 text-white py-3 text-lg font-semibold transition-colors duration-200"
+                        >
+                          Meter Balizas en el Mapa
                         </Button>
                       </div>
                     </CardContent>
