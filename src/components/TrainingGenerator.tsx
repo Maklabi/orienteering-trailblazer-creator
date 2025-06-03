@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -50,6 +49,15 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
       Math.sin(dLng/2) * Math.sin(dLng/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     return R * c;
+  };
+
+  // Function to filter beacons within 5km radius of location center
+  const filterBeaconsNearLocation = (beacons: Beacon[], centerPoint: { lat: number; lng: number }): Beacon[] => {
+    const maxDistanceFromCenter = 5000; // 5km in meters
+    return beacons.filter(beacon => {
+      const distance = calculateDistance(centerPoint.lat, centerPoint.lng, beacon.lat, beacon.lng);
+      return distance <= maxDistanceFromCenter;
+    });
   };
 
   // Function to generate a training route with distance constraints between consecutive beacons
@@ -124,23 +132,32 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
       
       setMapCenter(centerPoint);
 
+      // Filter beacons within 5km radius of the location
+      const nearbyBeacons = filterBeaconsNearLocation(savedBeacons, centerPoint);
+      
+      if (nearbyBeacons.length === 0) {
+        toast.warning(`No se encontraron balizas en un radio de 5km de ${location}. Añade balizas cerca de esta localidad.`);
+        setIsGenerating(false);
+        return;
+      }
+
       // Generate route with distance constraints between consecutive beacons
-      const routeBeacons = generateRouteWithDistanceConstraints(savedBeacons, maxDistanceBetweenBeacons, numBeacons);
+      const routeBeacons = generateRouteWithDistanceConstraints(nearbyBeacons, maxDistanceBetweenBeacons, numBeacons);
       
       if (routeBeacons.length === 0) {
-        toast.warning(`No se pudieron conectar balizas con la distancia máxima de ${maxDistanceBetweenBeacons}m entre ellas.`);
+        toast.warning(`No se pudieron conectar balizas con la distancia máxima de ${maxDistanceBetweenBeacons}m entre ellas en un radio de 5km de ${location}.`);
         setIsGenerating(false);
         return;
       }
 
       if (routeBeacons.length < numBeacons) {
-        toast.warning(`Solo se pudieron conectar ${routeBeacons.length} balizas con la distancia máxima de ${maxDistanceBetweenBeacons}m. Se usarán todas las posibles.`);
+        toast.warning(`Solo se pudieron conectar ${routeBeacons.length} balizas con la distancia máxima de ${maxDistanceBetweenBeacons}m en un radio de 5km de ${location}.`);
       }
 
       await new Promise(resolve => setTimeout(resolve, 500)); // Small delay for UX
       
       setGeneratedTraining(routeBeacons);
-      toast.success(`Entrenamiento generado con ${routeBeacons.length} balizas en ${location} (máx. ${maxDistanceBetweenBeacons}m entre balizas)`);
+      toast.success(`Entrenamiento generado con ${routeBeacons.length} balizas en ${location} (radio 5km, máx. ${maxDistanceBetweenBeacons}m entre balizas)`);
       
     } catch (error) {
       console.error("Error generating training:", error);
@@ -170,10 +187,14 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
     const lngDiff = maxLng - minLng;
     const maxDiff = Math.max(latDiff, lngDiff);
     
+    // Improved zoom calculation for better fit
     let zoom = 14;
-    if (maxDiff > 0.1) zoom = 10;
+    if (maxDiff > 0.2) zoom = 8;
+    else if (maxDiff > 0.1) zoom = 10;
     else if (maxDiff > 0.05) zoom = 12;
+    else if (maxDiff > 0.02) zoom = 13;
     else if (maxDiff > 0.01) zoom = 14;
+    else if (maxDiff > 0.005) zoom = 15;
     else zoom = 16;
     
     return {
@@ -292,19 +313,19 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                 size: A4;
               }
               .print-text {
-                font-size: 10px !important;
+                font-size: 8px !important;
               }
               .print-info {
-                font-size: 10px !important;
-                line-height: 1.2 !important;
+                font-size: 8px !important;
+                line-height: 1.1 !important;
               }
             }
           `}
         </style>
         <div className="print-container">
-          <div className="text-center mb-4">
+          <div className="text-center mb-2">
             <div className="print-info text-xs text-gray-700">
-              <strong>Localidad:</strong> {location} | <strong>Balizas:</strong> {generatedTraining.length} | <strong>Distancia máxima:</strong> {maxDistanceBetweenBeacons}m | <strong>Fecha:</strong> {new Date().toLocaleDateString('es-ES')}
+              <strong>LOCALIDAD:</strong> {location} | <strong>BALIZAS:</strong> {generatedTraining.length} | <strong>DISTANCIA MÁXIMA:</strong> {maxDistanceBetweenBeacons}m | <strong>FECHA:</strong> {new Date().toLocaleDateString('es-ES')}
             </div>
           </div>
           <MapComponent 
@@ -317,8 +338,8 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
             }))}
             className="w-full border-2 border-orange-500 rounded-lg"
             style={{ 
-              height: 'calc(100vh - 150px)', 
-              minHeight: '600px'
+              height: 'calc(100vh - 120px)', 
+              minHeight: '650px'
             }}
           />
         </div>
@@ -367,7 +388,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                     className="mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Introduce el nombre de la localidad para centrar el mapa
+                    Se buscarán balizas en un radio de 5km
                   </p>
                 </div>
 
@@ -493,15 +514,15 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                       <h3 className="font-semibold text-orange-800 mb-2">Información del Entrenamiento</h3>
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                          <span className="text-gray-600">Localidad:</span>
+                          <span className="text-gray-600">LOCALIDAD:</span>
                           <span className="ml-2 font-semibold">{location}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600">Balizas:</span>
+                          <span className="text-gray-600">BALIZAS:</span>
                           <span className="ml-2 font-semibold">{generatedTraining.length}</span>
                         </div>
                         <div>
-                          <span className="text-gray-600">Distancia máx. entre balizas:</span>
+                          <span className="text-gray-600">DISTANCIA MÁX. ENTRE BALIZAS:</span>
                           <span className="ml-2 font-semibold">{maxDistanceBetweenBeacons}m</span>
                         </div>
                         <div>
@@ -525,7 +546,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                         className="h-[400px] w-full rounded-md border mb-4"
                       />
                       <div className="text-sm text-orange-600 bg-orange-50 rounded p-2 inline-block">
-                        📍 Entrenamiento en: {location} | Balizas: {generatedTraining.length} | Máx. distancia entre balizas: {maxDistanceBetweenBeacons}m
+                        📍 Entrenamiento en: {location} | Balizas: {generatedTraining.length} | Radio: 5km | Máx. distancia entre balizas: {maxDistanceBetweenBeacons}m
                       </div>
                     </div>
 

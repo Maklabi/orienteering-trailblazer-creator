@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -119,8 +118,8 @@ const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <label htmlFor="location" className="text-sm font-medium text-gray-700">
-                    Localidad
+                  <label htmlFor="location" className="text-sm font-semibold text-gray-700 uppercase">
+                    LOCALIDAD
                   </label>
                   <div className="flex space-x-2">
                     <Input
@@ -144,7 +143,7 @@ const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
                 </div>
                 
                 <div className="pt-4 border-t">
-                  <h3 className="font-semibold text-gray-800 mb-2">Estadísticas</h3>
+                  <h3 className="font-semibold text-gray-800 mb-2 uppercase">ESTADÍSTICAS</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Total de balizas:</span>
