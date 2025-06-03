@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, MapPin, Route, Printer, Settings, Send } from 'lucide-react';
+import { ArrowLeft, MapPin, Route, Printer, Settings, Send, Image } from 'lucide-react';
 import { toast } from "sonner";
 import MapComponent from './MapComponent';
 
@@ -184,15 +185,57 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
   const sendToTelegram = async () => {
     if (!generatedTraining) return;
     
+    const phoneNumber = prompt("Introduce el número de teléfono (con código de país, ej: +34123456789):");
+    
+    if (!phoneNumber) {
+      toast.info("Envío cancelado");
+      return;
+    }
+
+    // Validate phone number format
+    const phoneRegex = /^\+[1-9]\d{1,14}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      toast.error("Formato de teléfono inválido. Usa el formato +34123456789");
+      return;
+    }
+    
     // Create a simple text message with the training info
-    const message = `🏃‍♂️ *Entrenamiento de Orientación*\n\n📍 *Localidad:* ${location}\n🎯 *Balizas:* ${generatedTraining.length}\n📏 *Distancia máx:* ${maxDistanceBetweenBeacons}m\n📅 *Fecha:* ${new Date().toLocaleDateString('es-ES')}\n\n*Lista de Balizas:*\n${generatedTraining.map((beacon, index) => `${index + 1}. ${beacon.name} (${beacon.lat.toFixed(4)}°, ${beacon.lng.toFixed(4)}°)`).join('\n')}`;
+    const message = `🏃‍♂️ *MI MAPA DE ORIENTACIÓN*\n\n📍 *Localidad:* ${location}\n🎯 *Balizas:* ${generatedTraining.length}\n📏 *Distancia máx:* ${maxDistanceBetweenBeacons}m\n📅 *Fecha:* ${new Date().toLocaleDateString('es-ES')}\n\n*Lista de Balizas:*\n${generatedTraining.map((beacon, index) => `${index + 1}. ${beacon.name} (${beacon.lat.toFixed(4)}°, ${beacon.lng.toFixed(4)}°)`).join('\n')}\n\n*Teléfono destino:* ${phoneNumber}`;
     
-    // Create Telegram share URL
-    const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(message)}`;
+    // For now, we'll show what would be sent
+    toast.success(`Mensaje preparado para ${phoneNumber}`);
+    console.log("Mensaje para Telegram:", message);
     
-    // Open Telegram share
-    window.open(telegramUrl, '_blank');
-    toast.success("Abriendo Telegram para compartir");
+    // Note: To actually send via Telegram, you would need a Telegram Bot API key
+    // This would require Supabase integration for secure API key storage
+  };
+
+  const sendMapImageToTelegram = async () => {
+    if (!generatedTraining) return;
+    
+    const phoneNumber = prompt("Introduce el número de teléfono (con código de país, ej: +34123456789):");
+    
+    if (!phoneNumber) {
+      toast.info("Envío cancelado");
+      return;
+    }
+
+    // Validate phone number format
+    const phoneRegex = /^\+[1-9]\d{1,14}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      toast.error("Formato de teléfono inválido. Usa el formato +34123456789");
+      return;
+    }
+    
+    toast.info("Preparando imagen del mapa...");
+    
+    // Note: To actually capture and send the map image, you would need:
+    // 1. A library to capture the map as image (like html2canvas)
+    // 2. A Telegram Bot API key stored securely in Supabase
+    // 3. An API endpoint to send the image via Telegram
+    
+    console.log(`Imagen del mapa preparada para enviar a ${phoneNumber} en el chat "MI MAPA DE ORIENTACIÓN"`);
+    toast.success(`Imagen preparada para ${phoneNumber}`);
   };
 
   const printTraining = () => {
@@ -349,17 +392,17 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                   <Input
                     id="maxDistance"
                     type="number"
-                    min="50"
+                    min="1"
                     max="5000"
                     value={maxDistanceBetweenBeacons}
                     onChange={(e) => {
-                      const value = parseInt(e.target.value) || 50;
-                      setMaxDistanceBetweenBeacons(Math.min(Math.max(value, 50), 5000));
+                      const value = parseInt(e.target.value) || 1;
+                      setMaxDistanceBetweenBeacons(Math.min(Math.max(value, 1), 5000));
                     }}
                     className="mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Distancia máxima permitida entre balizas consecutivas (50-5000m)
+                    Distancia máxima permitida entre balizas consecutivas (1-5000m)
                   </p>
                 </div>
 
@@ -396,7 +439,15 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                       className="w-full border-blue-600 text-blue-700 hover:bg-blue-50"
                     >
                       <Send className="w-4 h-4 mr-2" />
-                      Enviar por Telegram
+                      Enviar Texto por Telegram
+                    </Button>
+                    <Button 
+                      onClick={sendMapImageToTelegram}
+                      variant="outline"
+                      className="w-full border-blue-600 text-blue-700 hover:bg-blue-50"
+                    >
+                      <Image className="w-4 h-4 mr-2" />
+                      Enviar Imagen por Telegram
                     </Button>
                     <Button 
                       onClick={printTraining}
