@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Route, Home } from 'lucide-react';
+import { MapPin, Route } from 'lucide-react';
 import BeaconManager from '../components/BeaconManager';
 import TrainingGenerator from '../components/TrainingGenerator';
 
@@ -82,28 +82,6 @@ const Index = () => {
                       </div>
                     </CardContent>
                   </Card>
-                </div>
-
-                {/* Features */}
-                <div className="mt-16 text-center">
-                  <h3 className="text-2xl font-bold text-gray-800 mb-8">Características principales</h3>
-                  <div className="grid md:grid-cols-3 gap-6">
-                    <div className="bg-white rounded-lg p-6 shadow-md">
-                      <MapPin className="w-8 h-8 text-green-600 mx-auto mb-3" />
-                      <h4 className="font-semibold text-gray-800 mb-2">Mapas Interactivos</h4>
-                      <p className="text-sm text-gray-600">Integración con Google Maps para precisión máxima</p>
-                    </div>
-                    <div className="bg-white rounded-lg p-6 shadow-md">
-                      <Route className="w-8 h-8 text-orange-600 mx-auto mb-3" />
-                      <h4 className="font-semibold text-gray-800 mb-2">Generación Automática</h4>
-                      <p className="text-sm text-gray-600">Entrenamientos aleatorios basados en ubicación</p>
-                    </div>
-                    <div className="bg-white rounded-lg p-6 shadow-md">
-                      <Home className="w-8 h-8 text-blue-600 mx-auto mb-3" />
-                      <h4 className="font-semibold text-gray-800 mb-2">Fácil de Usar</h4>
-                      <p className="text-sm text-gray-600">Interfaz intuitiva para entrenadores</p>
-                    </div>
-                  </div>
                 </div>
               </div>
             </main>

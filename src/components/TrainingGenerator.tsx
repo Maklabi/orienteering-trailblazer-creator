@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, MapPin, Route, Printer, Settings } from 'lucide-react';
+import { ArrowLeft, MapPin, Route, Printer, Settings, Send } from 'lucide-react';
 import { toast } from "sonner";
 import MapComponent from './MapComponent';
 
@@ -181,6 +181,20 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
     };
   };
 
+  const sendToTelegram = async () => {
+    if (!generatedTraining) return;
+    
+    // Create a simple text message with the training info
+    const message = `🏃‍♂️ *Entrenamiento de Orientación*\n\n📍 *Localidad:* ${location}\n🎯 *Balizas:* ${generatedTraining.length}\n📏 *Distancia máx:* ${maxDistanceBetweenBeacons}m\n📅 *Fecha:* ${new Date().toLocaleDateString('es-ES')}\n\n*Lista de Balizas:*\n${generatedTraining.map((beacon, index) => `${index + 1}. ${beacon.name} (${beacon.lat.toFixed(4)}°, ${beacon.lng.toFixed(4)}°)`).join('\n')}`;
+    
+    // Create Telegram share URL
+    const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(message)}`;
+    
+    // Open Telegram share
+    window.open(telegramUrl, '_blank');
+    toast.success("Abriendo Telegram para compartir");
+  };
+
   const printTraining = () => {
     if (!generatedTraining) return;
     
@@ -235,23 +249,19 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                 size: A4;
               }
               .print-text {
-                font-size: 12px !important;
+                font-size: 10px !important;
               }
-              .print-title {
-                font-size: 18px !important;
+              .print-info {
+                font-size: 10px !important;
+                line-height: 1.2 !important;
               }
             }
           `}
         </style>
         <div className="print-container">
-          <div className="text-center mb-6">
-            <h1 className="print-title text-2xl font-bold text-orange-600 mb-3">
-              Entrenamiento de Orientación - {location}
-            </h1>
-            <div className="print-text text-sm text-gray-700 space-y-1">
-              <div>Número de balizas: <strong>{generatedTraining.length}</strong></div>
-              <div>Distancia máxima entre balizas: <strong>{maxDistanceBetweenBeacons}m</strong></div>
-              <div>Fecha: <strong>{new Date().toLocaleDateString('es-ES')}</strong></div>
+          <div className="text-center mb-4">
+            <div className="print-info text-xs text-gray-700">
+              <strong>Localidad:</strong> {location} | <strong>Balizas:</strong> {generatedTraining.length} | <strong>Distancia máxima:</strong> {maxDistanceBetweenBeacons}m | <strong>Fecha:</strong> {new Date().toLocaleDateString('es-ES')}
             </div>
           </div>
           <MapComponent 
@@ -264,7 +274,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
             }))}
             className="w-full border-2 border-orange-500 rounded-lg"
             style={{ 
-              height: 'calc(100vh - 200px)', 
+              height: 'calc(100vh - 150px)', 
               minHeight: '600px'
             }}
           />
@@ -305,7 +315,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="location" className="text-gray-700">Localidad</Label>
+                  <Label htmlFor="location" className="text-gray-700 font-semibold uppercase">LOCALIDAD</Label>
                   <Input
                     id="location"
                     value={location}
@@ -319,7 +329,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                 </div>
 
                 <div>
-                  <Label htmlFor="numBeacons" className="text-gray-700">Número de balizas</Label>
+                  <Label htmlFor="numBeacons" className="text-gray-700 font-semibold uppercase">NÚMERO DE BALIZAS</Label>
                   <Input
                     id="numBeacons"
                     type="number"
@@ -335,7 +345,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                 </div>
 
                 <div>
-                  <Label htmlFor="maxDistance" className="text-gray-700">Distancia máxima entre balizas (metros)</Label>
+                  <Label htmlFor="maxDistance" className="text-gray-700 font-semibold uppercase">DISTANCIA MÁXIMA ENTRE BALIZAS (METROS)</Label>
                   <Input
                     id="maxDistance"
                     type="number"
@@ -355,7 +365,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
 
                 <div className="pt-2 pb-2 border-t border-b border-gray-200">
                   <div className="flex justify-between text-sm text-gray-600 font-medium">
-                    <span>Balizas disponibles:</span>
+                    <span className="uppercase font-semibold">BALIZAS DISPONIBLES:</span>
                     <span className={savedBeacons.length > 0 ? "text-green-600" : "text-red-600"}>
                       {savedBeacons.length}
                     </span>
@@ -380,6 +390,14 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
 
                 {generatedTraining && (
                   <div className="pt-4 border-t space-y-2">
+                    <Button 
+                      onClick={sendToTelegram}
+                      variant="outline"
+                      className="w-full border-blue-600 text-blue-700 hover:bg-blue-50"
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      Enviar por Telegram
+                    </Button>
                     <Button 
                       onClick={printTraining}
                       variant="outline"
