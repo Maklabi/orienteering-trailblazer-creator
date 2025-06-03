@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MapPin, Trash2, Plus, X, Search } from 'lucide-react';
+import { ArrowLeft, MapPin, Trash2, Plus, Search } from 'lucide-react';
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import MapComponent from './MapComponent';
@@ -22,7 +22,6 @@ interface BeaconManagerProps {
 
 const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
   const [beacons, setBeacons] = useState<Beacon[]>([]);
-  const [isMapOpen, setIsMapOpen] = useState(false);
   const [mapCenter, setMapCenter] = useState({ lat: 40.4168, lng: -3.7038 }); // Default to Madrid
   const [location, setLocation] = useState('');
 
@@ -62,10 +61,6 @@ const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
     toast.success("Baliza eliminada");
   };
 
-  const toggleMap = () => {
-    setIsMapOpen(!isMapOpen);
-  };
-
   const searchLocation = async () => {
     if (!location.trim()) {
       toast.error("Por favor introduce una localidad");
@@ -82,7 +77,6 @@ const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
           lat: parseFloat(lat),
           lng: parseFloat(lon)
         });
-        setIsMapOpen(true);
         toast.success(`Localidad encontrada: ${data[0].display_name}`);
       } else {
         toast.error("No se encontró la localidad. Intenta con un nombre diferente.");
@@ -149,13 +143,6 @@ const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
                   </p>
                 </div>
                 
-                <Button 
-                  onClick={toggleMap}
-                  className="w-full bg-green-600 hover:bg-green-700"
-                >
-                  {isMapOpen ? "Cerrar Mapa" : "Abrir Mapa"}
-                </Button>
-                
                 <div className="pt-4 border-t">
                   <h3 className="font-semibold text-gray-800 mb-2">Estadísticas</h3>
                   <div className="space-y-2 text-sm">
@@ -167,46 +154,9 @@ const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
                 </div>
               </CardContent>
             </Card>
-          </div>
 
-          {/* Beacons List and Map */}
-          <div className="lg:col-span-2">
-            {isMapOpen && (
-              <Card className="border-2 border-green-200 mb-6">
-                <CardHeader className="pb-2">
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="flex items-center gap-2 text-green-800">
-                      <MapPin className="w-5 h-5" />
-                      Mapa - Selecciona una ubicación
-                    </CardTitle>
-                    <Button 
-                      variant="ghost"
-                      size="sm"
-                      onClick={toggleMap}
-                      className="h-8 w-8 p-0"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-600 mb-2">Haz clic en el mapa para añadir una baliza</p>
-                  <MapComponent 
-                    center={mapCenter} 
-                    zoom={13} 
-                    markers={beacons.map(b => ({
-                      id: b.id,
-                      position: { lat: b.lat, lng: b.lng },
-                      title: b.name
-                    }))}
-                    onMapClick={addBeacon}
-                    className="h-[400px] w-full rounded-md border"
-                  />
-                </CardContent>
-              </Card>
-            )}
-
-            <Card className="border-2 border-green-200">
+            {/* Beacons List */}
+            <Card className="border-2 border-green-200 mt-6">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-green-800">
                   <MapPin className="w-5 h-5" />
@@ -215,22 +165,22 @@ const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
               </CardHeader>
               <CardContent>
                 {beacons.length === 0 ? (
-                  <div className="text-center py-12">
-                    <MapPin className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-600 mb-2">No hay balizas guardadas</h3>
-                    <p className="text-gray-500">Comienza añadiendo tu primera baliza usando el mapa</p>
+                  <div className="text-center py-8">
+                    <MapPin className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                    <h3 className="text-sm font-semibold text-gray-600 mb-1">No hay balizas guardadas</h3>
+                    <p className="text-xs text-gray-500">Haz clic en el mapa para añadir balizas</p>
                   </div>
                 ) : (
-                  <div className="grid gap-4">
+                  <div className="grid gap-3">
                     {beacons.map((beacon) => (
                       <div 
                         key={beacon.id}
-                        className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                        className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow"
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <h3 className="font-semibold text-gray-800 mb-1">{beacon.name}</h3>
-                            <div className="text-sm text-gray-600 space-y-1">
+                            <h3 className="font-semibold text-gray-800 mb-1 text-sm">{beacon.name}</h3>
+                            <div className="text-xs text-gray-600 space-y-1">
                               <p>Lat: {beacon.lat.toFixed(6)}</p>
                               <p>Lng: {beacon.lng.toFixed(6)}</p>
                               <p>Añadida: {beacon.dateAdded}</p>
@@ -240,15 +190,41 @@ const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
                             onClick={() => deleteBeacon(beacon.id)}
                             variant="ghost"
                             size="sm"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8 p-0"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Map - Always Visible */}
+          <div className="lg:col-span-2">
+            <Card className="border-2 border-green-200">
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-green-800">
+                  <MapPin className="w-5 h-5" />
+                  Mapa - Selecciona una ubicación
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600 mb-2">Haz clic en el mapa para añadir una baliza</p>
+                <MapComponent 
+                  center={mapCenter} 
+                  zoom={13} 
+                  markers={beacons.map(b => ({
+                    id: b.id,
+                    position: { lat: b.lat, lng: b.lng },
+                    title: b.name
+                  }))}
+                  onMapClick={addBeacon}
+                  className="h-[500px] w-full rounded-md border"
+                />
               </CardContent>
             </Card>
           </div>

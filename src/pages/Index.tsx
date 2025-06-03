@@ -32,16 +32,6 @@ const Index = () => {
             {/* Main Content */}
             <main className="flex-1 flex items-center justify-center p-6">
               <div className="max-w-4xl w-full">
-                <div className="text-center mb-12">
-                  <h2 className="text-4xl font-bold text-green-800 mb-4">
-                    Bienvenido a OrientaTrainer Pro
-                  </h2>
-                  <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                    La herramienta profesional para crear y gestionar entrenamientos 
-                    de carreras de orientación de forma rápida y eficiente.
-                  </p>
-                </div>
-
                 <div className="grid md:grid-cols-2 gap-8">
                   {/* Meter Balizas Card */}
                   <Card className="group hover:shadow-2xl transition-all duration-300 border-2 border-green-200 hover:border-green-400 bg-white">

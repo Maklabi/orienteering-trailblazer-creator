@@ -234,15 +234,21 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                 margin: 20px;
                 size: A4;
               }
+              .print-text {
+                font-size: 12px !important;
+              }
+              .print-title {
+                font-size: 18px !important;
+              }
             }
           `}
         </style>
         <div className="print-container">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-orange-600 mb-4">
+          <div className="text-center mb-6">
+            <h1 className="print-title text-2xl font-bold text-orange-600 mb-3">
               Entrenamiento de Orientación - {location}
             </h1>
-            <div className="text-lg text-gray-700 space-y-2">
+            <div className="print-text text-sm text-gray-700 space-y-1">
               <div>Número de balizas: <strong>{generatedTraining.length}</strong></div>
               <div>Distancia máxima entre balizas: <strong>{maxDistanceBetweenBeacons}m</strong></div>
               <div>Fecha: <strong>{new Date().toLocaleDateString('es-ES')}</strong></div>
@@ -258,8 +264,8 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
             }))}
             className="w-full border-2 border-orange-500 rounded-lg"
             style={{ 
-              height: 'calc(100vh - 300px)', 
-              minHeight: '500px'
+              height: 'calc(100vh - 200px)', 
+              minHeight: '600px'
             }}
           />
         </div>
