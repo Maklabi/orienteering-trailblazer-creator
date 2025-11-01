@@ -281,11 +281,11 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
 
   const handleNumBeaconsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value) || 1;
-    const maxAllowed = Math.max(1, savedBeacons.length);
+    const maxAllowed = Math.min(50, savedBeacons.length);
     setNumBeacons(Math.min(Math.max(value, 1), maxAllowed));
   };
 
-  const maxAllowedBeacons = Math.max(1, savedBeacons.length);
+  const maxAllowedBeacons = Math.min(50, savedBeacons.length);
   const mapBounds = calculateMapBounds();
 
   if (isPrintMode && generatedTraining) {
@@ -398,13 +398,13 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                     id="numBeacons"
                     type="number"
                     min="1"
-                    max={maxAllowedBeacons}
+                    max="50"
                     value={numBeacons}
                     onChange={handleNumBeaconsChange}
                     className="mt-1"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    Entre 1 y {maxAllowedBeacons} balizas por entrenamiento
+                    Hasta 50 balizas por entrenamiento
                   </p>
                 </div>
 
@@ -454,14 +454,6 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
 
                 {generatedTraining && (
                   <div className="pt-4 border-t space-y-2">
-                    <Button 
-                      onClick={sendMapImageToTelegram}
-                      variant="outline"
-                      className="w-full border-blue-600 text-blue-700 hover:bg-blue-50"
-                    >
-                      <Image className="w-4 h-4 mr-2" />
-                      Enviar Imagen por Telegram
-                    </Button>
                     <Button 
                       onClick={printTraining}
                       variant="outline"
