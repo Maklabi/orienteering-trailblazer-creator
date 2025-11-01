@@ -16,6 +16,7 @@ interface MapComponentProps {
     position: MapPosition;
     title: string;
   }>;
+  startMarker?: MapPosition | null;
   onMapClick?: (position: MapPosition) => void;
   className?: string;
   style?: React.CSSProperties;
@@ -25,6 +26,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   center,
   zoom,
   markers = [],
+  startMarker = null,
   onMapClick,
   className = "h-[400px] w-full",
   style
@@ -32,6 +34,7 @@ const MapComponent: React.FC<MapComponentProps> = ({
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<L.Map | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const startMarkerRef = useRef<L.Marker | null>(null);
 
   // Initialize map
   useEffect(() => {
@@ -107,6 +110,37 @@ const MapComponent: React.FC<MapComponentProps> = ({
         .bindTooltip(marker.title);
     });
   }, [markers]);
+
+  // Update start marker when it changes
+  useEffect(() => {
+    const map = leafletMapRef.current;
+    
+    if (!map) return;
+    
+    // Remove existing start marker
+    if (startMarkerRef.current) {
+      map.removeLayer(startMarkerRef.current);
+      startMarkerRef.current = null;
+    }
+    
+    // Add new start marker if provided
+    if (startMarker) {
+      const triangleIcon = L.divIcon({
+        html: `<svg width="30" height="30" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="15,5 25,25 5,25" fill="none" stroke="magenta" stroke-width="2"/>
+        </svg>`,
+        className: 'start-marker-icon',
+        iconSize: [30, 30],
+        iconAnchor: [15, 25]
+      });
+
+      const marker = L.marker([startMarker.lat, startMarker.lng], { icon: triangleIcon })
+        .addTo(map)
+        .bindTooltip('Punto de Inicio');
+      
+      startMarkerRef.current = marker;
+    }
+  }, [startMarker]);
 
   return (
     <div ref={mapRef} className={className} style={style} />

@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { ArrowLeft, MapPin, Route, Printer, Settings, Send, Image } from 'lucide-react';
+import { ArrowLeft, MapPin, Route, Printer, Settings } from 'lucide-react';
 import { toast } from "sonner";
 import MapComponent from './MapComponent';
 
@@ -21,12 +20,12 @@ interface TrainingGeneratorProps {
 }
 
 const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
-  const [location, setLocation] = useState('');
+  const [startPoint, setStartPoint] = useState<{ lat: number; lng: number } | null>(null);
   const [numBeacons, setNumBeacons] = useState(5);
   const [maxDistanceBetweenBeacons, setMaxDistanceBetweenBeacons] = useState(500);
   const [generatedTraining, setGeneratedTraining] = useState<Beacon[] | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [mapCenter, setMapCenter] = useState({ lat: 40.4168, lng: -3.7038 });
+  const [mapCenter] = useState({ lat: 43.2948997, lng: -1.9549783 }); // Martutene
   const [savedBeacons, setSavedBeacons] = useState<Beacon[]>([]);
   const [isPrintMode, setIsPrintMode] = useState(false);
 
@@ -102,9 +101,14 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
     return route;
   };
 
+  const handleMapClick = (position: { lat: number; lng: number }) => {
+    setStartPoint(position);
+    toast.success("Punto de inicio seleccionado");
+  };
+
   const generateTraining = async () => {
-    if (!location.trim()) {
-      toast.error("Por favor, introduce el nombre de una localidad");
+    if (!startPoint) {
+      toast.error("Por favor selecciona el punto de inicio en el mapa");
       return;
     }
 
@@ -116,27 +120,11 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
     setIsGenerating(true);
     
     try {
-      // Try to geocode the location to center the map there
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`);
-      const data = await response.json();
-      
-      let centerPoint = { lat: 40.4168, lng: -3.7038 }; // Default to Madrid
-      
-      if (data && data.length > 0) {
-        const { lat, lon } = data[0];
-        centerPoint = {
-          lat: parseFloat(lat),
-          lng: parseFloat(lon)
-        };
-      }
-      
-      setMapCenter(centerPoint);
-
-      // Filter beacons within 5km radius of the location
-      const nearbyBeacons = filterBeaconsNearLocation(savedBeacons, centerPoint);
+      // Filter beacons within 5km radius of the start point
+      const nearbyBeacons = filterBeaconsNearLocation(savedBeacons, startPoint);
       
       if (nearbyBeacons.length === 0) {
-        toast.warning(`No se encontraron balizas en un radio de 5km de ${location}. Añade balizas cerca de esta localidad.`);
+        toast.warning(`No se encontraron balizas en un radio de 5km del punto seleccionado. Añade balizas cerca de esta zona.`);
         setIsGenerating(false);
         return;
       }
@@ -145,19 +133,19 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
       const routeBeacons = generateRouteWithDistanceConstraints(nearbyBeacons, maxDistanceBetweenBeacons, numBeacons);
       
       if (routeBeacons.length === 0) {
-        toast.warning(`No se pudieron conectar balizas con la distancia máxima de ${maxDistanceBetweenBeacons}m entre ellas en un radio de 5km de ${location}.`);
+        toast.warning(`No se pudieron conectar balizas con la distancia máxima de ${maxDistanceBetweenBeacons}m entre ellas en un radio de 5km.`);
         setIsGenerating(false);
         return;
       }
 
       if (routeBeacons.length < numBeacons) {
-        toast.warning(`Solo se pudieron conectar ${routeBeacons.length} balizas con la distancia máxima de ${maxDistanceBetweenBeacons}m en un radio de 5km de ${location}.`);
+        toast.warning(`Solo se pudieron conectar ${routeBeacons.length} balizas con la distancia máxima de ${maxDistanceBetweenBeacons}m en un radio de 5km.`);
       }
 
       await new Promise(resolve => setTimeout(resolve, 500)); // Small delay for UX
       
       setGeneratedTraining(routeBeacons);
-      toast.success(`Entrenamiento generado con ${routeBeacons.length} balizas en ${location} (radio 5km, máx. ${maxDistanceBetweenBeacons}m entre balizas)`);
+      toast.success(`Entrenamiento generado con ${routeBeacons.length} balizas (radio 5km, máx. ${maxDistanceBetweenBeacons}m entre balizas)`);
       
     } catch (error) {
       console.error("Error generating training:", error);
@@ -275,7 +263,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
 
   const clearTraining = () => {
     setGeneratedTraining(null);
-    setLocation('');
+    setStartPoint(null);
     toast.info("Entrenamiento borrado");
   };
 
@@ -325,7 +313,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
         <div className="print-container">
           <div className="text-center mb-2">
             <div className="print-info text-xs text-gray-700">
-              <strong>LOCALIDAD:</strong> {location} | <strong>BALIZAS:</strong> {generatedTraining.length} | <strong>DISTANCIA MÁXIMA:</strong> {maxDistanceBetweenBeacons}m | <strong>FECHA:</strong> {new Date().toLocaleDateString('es-ES')}
+              <strong>BALIZAS:</strong> {generatedTraining.length} | <strong>DISTANCIA MÁXIMA:</strong> {maxDistanceBetweenBeacons}m | <strong>FECHA:</strong> {new Date().toLocaleDateString('es-ES')}
             </div>
           </div>
           <MapComponent 
@@ -378,22 +366,22 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="location" className="text-gray-700 font-semibold uppercase">LOCALIDAD</Label>
-                  <Input
-                    id="location"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="ej: Madrid, Barcelona..."
-                    className="mt-1"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Se buscarán balizas en un radio de 5km
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 uppercase">
+                    Punto de Inicio
+                  </label>
+                  <p className={`text-sm p-3 rounded-md border ${startPoint ? 'text-green-700 bg-green-50 border-green-300' : 'text-gray-600 bg-gray-50 border-gray-300'}`}>
+                    {startPoint 
+                      ? '✓ Punto de inicio seleccionado en el mapa' 
+                      : 'Haz click izquierdo en el mapa en el punto donde quieras que empiece el entrenamiento'}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Se buscarán balizas en un radio de 5km a la redonda del punto seleccionado
                   </p>
                 </div>
 
                 <div>
-                  <Label htmlFor="numBeacons" className="text-gray-700 font-semibold uppercase">NÚMERO DE BALIZAS</Label>
+                  <label htmlFor="numBeacons" className="text-sm font-semibold text-gray-700 uppercase block mb-1">Número de Balizas</label>
                   <Input
                     id="numBeacons"
                     type="number"
@@ -409,7 +397,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                 </div>
 
                 <div>
-                  <Label htmlFor="maxDistance" className="text-gray-700 font-semibold uppercase">DISTANCIA MÁXIMA ENTRE BALIZAS (METROS)</Label>
+                  <label htmlFor="maxDistance" className="text-sm font-semibold text-gray-700 uppercase block mb-1">Distancia Máxima Entre Balizas (Metros)</label>
                   <Input
                     id="maxDistance"
                     type="number"
@@ -481,15 +469,21 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-orange-800">
                   <Route className="w-5 h-5" />
-                  {generatedTraining ? `Entrenamiento - ${location}` : 'Resultado del Entrenamiento'}
+                  {generatedTraining ? `Entrenamiento Generado` : 'Resultado del Entrenamiento'}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {!generatedTraining ? (
-                  <div className="text-center py-12">
-                    <Route className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-600 mb-2">No hay entrenamiento generado</h3>
-                    <p className="text-gray-500">Configura los parámetros y genera tu primer entrenamiento</p>
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-600">Haz click en el mapa para seleccionar el punto de inicio del entrenamiento</p>
+                    <MapComponent 
+                      center={mapCenter} 
+                      zoom={13} 
+                      markers={[]}
+                      startMarker={startPoint}
+                      onMapClick={handleMapClick}
+                      className="h-[500px] w-full rounded-md border"
+                    />
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -498,16 +492,16 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                       <h3 className="font-semibold text-orange-800 mb-2">Información del Entrenamiento</h3>
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                          <span className="text-gray-600">LOCALIDAD:</span>
-                          <span className="ml-2 font-semibold">{location}</span>
-                        </div>
-                        <div>
                           <span className="text-gray-600">BALIZAS:</span>
                           <span className="ml-2 font-semibold">{generatedTraining.length}</span>
                         </div>
                         <div>
                           <span className="text-gray-600">DISTANCIA MÁX. ENTRE BALIZAS:</span>
                           <span className="ml-2 font-semibold">{maxDistanceBetweenBeacons}m</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-600">PUNTO DE INICIO:</span>
+                          <span className="ml-2 font-semibold">{startPoint?.lat.toFixed(4)}°, {startPoint?.lng.toFixed(4)}°</span>
                         </div>
                         <div>
                           <span className="text-gray-600">Generado:</span>
@@ -527,10 +521,12 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                           position: { lat: b.lat, lng: b.lng },
                           title: `Baliza ${index + 1}: ${b.name}`
                         }))}
+                        startMarker={startPoint}
+                        onMapClick={handleMapClick}
                         className="h-[400px] w-full rounded-md border mb-4"
                       />
                       <div className="text-sm text-orange-600 bg-orange-50 rounded p-2 inline-block">
-                        📍 Entrenamiento en: {location} | Balizas: {generatedTraining.length} | Radio: 5km | Máx. distancia entre balizas: {maxDistanceBetweenBeacons}m
+                        📍 Balizas: {generatedTraining.length} | Radio: 5km | Máx. distancia entre balizas: {maxDistanceBetweenBeacons}m
                       </div>
                     </div>
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, MapPin, Trash2, Plus, Search } from 'lucide-react';
+import { ArrowLeft, MapPin, Trash2, Plus } from 'lucide-react';
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import MapComponent from './MapComponent';
@@ -21,8 +21,7 @@ interface BeaconManagerProps {
 
 const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
   const [beacons, setBeacons] = useState<Beacon[]>([]);
-  const [mapCenter, setMapCenter] = useState({ lat: 40.4168, lng: -3.7038 }); // Default to Madrid
-  const [location, setLocation] = useState('');
+  const [mapCenter] = useState({ lat: 43.2948997, lng: -1.9549783 }); // Martutene
 
   useEffect(() => {
     loadBeacons();
@@ -60,31 +59,6 @@ const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
     toast.success("Baliza eliminada");
   };
 
-  const searchLocation = async () => {
-    if (!location.trim()) {
-      toast.error("Por favor introduce una localidad");
-      return;
-    }
-
-    try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`);
-      const data = await response.json();
-      
-      if (data && data.length > 0) {
-        const { lat, lon } = data[0];
-        setMapCenter({
-          lat: parseFloat(lat),
-          lng: parseFloat(lon)
-        });
-        toast.success(`Localidad encontrada: ${data[0].display_name}`);
-      } else {
-        toast.error("No se encontró la localidad. Intenta con un nombre diferente.");
-      }
-    } catch (error) {
-      console.error("Error searching location:", error);
-      toast.error("Error al buscar la localidad. Inténtalo de nuevo.");
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-amber-50">
@@ -118,27 +92,8 @@ const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <label htmlFor="location" className="text-sm font-semibold text-gray-700 uppercase">
-                    LOCALIDAD
-                  </label>
-                  <div className="flex space-x-2">
-                    <Input
-                      id="location"
-                      placeholder="Ej. Madrid, España"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      className="flex-1"
-                    />
-                    <Button 
-                      onClick={searchLocation}
-                      size="icon"
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      <Search className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Introduce una localidad para centrar el mapa
+                  <p className="text-sm text-gray-700 p-3 rounded-md bg-blue-50 border border-blue-200">
+                    Haz click izquierdo en el mapa para añadir una baliza
                   </p>
                 </div>
                 
