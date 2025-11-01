@@ -93,7 +93,7 @@ const BeaconManager: React.FC<BeaconManagerProps> = ({ onBack }) => {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <p className="text-sm text-gray-700 p-3 rounded-md bg-blue-50 border border-blue-200">
-                    Haz click izquierdo en el mapa para añadir una baliza
+                    Haz click izquierdo en el mapa para añadir balizas que usarás en tus entrenamientos
                   </p>
                 </div>
                 

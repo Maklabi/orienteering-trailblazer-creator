@@ -59,11 +59,11 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
     });
   };
 
-  // Function to generate a training route with distance constraints between consecutive beacons
-  const generateRouteWithDistanceConstraints = (beacons: Beacon[], maxDistance: number, numBeacons: number): Beacon[] => {
+  // Function to generate a training route that returns to start point
+  const generateRouteWithDistanceConstraints = (beacons: Beacon[], maxDistance: number, numBeacons: number, startPoint: { lat: number; lng: number }): Beacon[] => {
     if (beacons.length === 0) return [];
     
-    // Start with a random beacon
+    // Start with a random beacon near the start point
     const route: Beacon[] = [];
     const availableBeacons = [...beacons];
     
@@ -73,7 +73,8 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
     availableBeacons.splice(firstIndex, 1);
     
     // Build route by finding next beacons within distance constraint
-    while (route.length < numBeacons && availableBeacons.length > 0) {
+    // Reserve the last beacon to close the loop back to start
+    while (route.length < numBeacons - 1 && availableBeacons.length > 0) {
       const lastBeacon = route[route.length - 1];
       
       // Find all beacons within max distance from the last beacon
@@ -96,6 +97,28 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
       // Remove the selected beacon from available beacons
       const beaconIndex = availableBeacons.findIndex(b => b.id === nextBeacon.id);
       availableBeacons.splice(beaconIndex, 1);
+    }
+    
+    // For the last beacon, try to find one close to the start point to close the loop
+    if (route.length > 0 && availableBeacons.length > 0) {
+      const lastBeacon = route[route.length - 1];
+      
+      // Find beacons that are within distance from last beacon AND close to start point
+      const closingBeacons = availableBeacons.filter(beacon => {
+        const distanceFromLast = calculateDistance(lastBeacon.lat, lastBeacon.lng, beacon.lat, beacon.lng);
+        const distanceToStart = calculateDistance(beacon.lat, beacon.lng, startPoint.lat, startPoint.lng);
+        return distanceFromLast <= maxDistance && distanceToStart <= maxDistance;
+      });
+      
+      if (closingBeacons.length > 0) {
+        // Pick the beacon closest to start point
+        const closestToStart = closingBeacons.reduce((closest, beacon) => {
+          const distToStart = calculateDistance(beacon.lat, beacon.lng, startPoint.lat, startPoint.lng);
+          const closestDist = calculateDistance(closest.lat, closest.lng, startPoint.lat, startPoint.lng);
+          return distToStart < closestDist ? beacon : closest;
+        });
+        route.push(closestToStart);
+      }
     }
     
     return route;
@@ -129,8 +152,8 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
         return;
       }
 
-      // Generate route with distance constraints between consecutive beacons
-      const routeBeacons = generateRouteWithDistanceConstraints(nearbyBeacons, maxDistanceBetweenBeacons, numBeacons);
+      // Generate route with distance constraints between consecutive beacons, returning to start
+      const routeBeacons = generateRouteWithDistanceConstraints(nearbyBeacons, maxDistanceBetweenBeacons, numBeacons, startPoint);
       
       if (routeBeacons.length === 0) {
         toast.warning(`No se pudieron conectar balizas con la distancia máxima de ${maxDistanceBetweenBeacons}m entre ellas en un radio de 5km.`);
@@ -372,11 +395,11 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                   </label>
                   <p className={`text-sm p-3 rounded-md border ${startPoint ? 'text-green-700 bg-green-50 border-green-300' : 'text-gray-600 bg-gray-50 border-gray-300'}`}>
                     {startPoint 
-                      ? '✓ Punto de inicio seleccionado en el mapa' 
-                      : 'Haz click izquierdo en el mapa en el punto donde quieras que empiece el entrenamiento'}
+                      ? '✓ Punto de inicio y llegada seleccionado en el mapa' 
+                      : 'Haz click izquierdo en el mapa para marcar el punto de inicio y llegada del entrenamiento'}
                   </p>
                   <p className="text-xs text-gray-500">
-                    Se buscarán balizas en un radio de 5km a la redonda del punto seleccionado
+                    Se buscarán balizas en un radio de 5km. La última baliza estará cerca del punto de inicio para cerrar el circuito.
                   </p>
                 </div>
 
@@ -475,7 +498,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
               <CardContent>
                 {!generatedTraining ? (
                   <div className="space-y-4">
-                    <p className="text-sm text-gray-600">Haz click en el mapa para seleccionar el punto de inicio del entrenamiento</p>
+                    <p className="text-sm text-gray-600">Haz click en el mapa para seleccionar el punto de inicio y llegada del entrenamiento (triángulo magenta)</p>
                     <MapComponent 
                       center={mapCenter} 
                       zoom={13} 
@@ -500,7 +523,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                           <span className="ml-2 font-semibold">{maxDistanceBetweenBeacons}m</span>
                         </div>
                         <div>
-                          <span className="text-gray-600">PUNTO DE INICIO:</span>
+                          <span className="text-gray-600">INICIO/LLEGADA:</span>
                           <span className="ml-2 font-semibold">{startPoint?.lat.toFixed(4)}°, {startPoint?.lng.toFixed(4)}°</span>
                         </div>
                         <div>
@@ -526,7 +549,7 @@ const TrainingGenerator: React.FC<TrainingGeneratorProps> = ({ onBack }) => {
                         className="h-[400px] w-full rounded-md border mb-4"
                       />
                       <div className="text-sm text-orange-600 bg-orange-50 rounded p-2 inline-block">
-                        📍 Balizas: {generatedTraining.length} | Radio: 5km | Máx. distancia entre balizas: {maxDistanceBetweenBeacons}m
+                        📍 Balizas: {generatedTraining.length} | Radio: 5km | Máx. distancia: {maxDistanceBetweenBeacons}m | 🔺 Triángulo magenta = Inicio/Llegada
                       </div>
                     </div>
 
