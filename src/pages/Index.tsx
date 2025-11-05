@@ -24,7 +24,7 @@ const Index = () => {
               <div className="max-w-4xl mx-auto">
                 <h1 className="text-3xl font-bold flex items-center gap-3">
                   <MapPin className="text-orange-300" />
-                  Xolomon Trainning
+                  XOLOMON TRAINNING
                 </h1>
                 <p className="text-green-100 mt-2">Creador de entrenamientos de carreras de orientación</p>
               </div>
