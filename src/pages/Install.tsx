@@ -21,7 +21,7 @@ const Install = () => {
           <CardHeader>
             <div className="flex items-center gap-3 mb-2">
               <Download className="h-8 w-8 text-red-500" />
-              <CardTitle className="text-2xl">Instalar OrientaTrainer Pro</CardTitle>
+              <CardTitle className="text-2xl">Instalar Xolomon Trainning</CardTitle>
             </div>
             <CardDescription>
               Instala la aplicación en tu dispositivo para acceder sin conexión y tener una experiencia como app nativa

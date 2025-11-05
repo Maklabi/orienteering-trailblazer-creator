@@ -18,8 +18,8 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon-512x512.png'],
       manifest: {
-        name: 'OrientaTrainer Pro',
-        short_name: 'OrientaTrainer',
+        name: 'Xolomon Trainning',
+        short_name: 'Xolomon',
         description: 'Aplicación para generar entrenamientos de orientación y gestionar balizas',
         theme_color: '#ef4444',
         background_color: '#ffffff',

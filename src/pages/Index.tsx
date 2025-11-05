@@ -24,7 +24,7 @@ const Index = () => {
               <div className="max-w-4xl mx-auto">
                 <h1 className="text-3xl font-bold flex items-center gap-3">
                   <MapPin className="text-orange-300" />
-                  OrientaTrainer Pro
+                  Xolomon Trainning
                 </h1>
                 <p className="text-green-100 mt-2">Creador de entrenamientos de carreras de orientación</p>
               </div>
@@ -99,7 +99,7 @@ const Index = () => {
                   <Download className="w-4 h-4 mr-2" />
                   Instalar como App
                 </Button>
-                <p className="text-green-100">© 2024 OrientaTrainer Pro - Software para entrenamientos de orientación</p>
+                <p className="text-green-100">© 2024 Xolomon Trainning - Software para entrenamientos de orientación</p>
               </div>
             </footer>
           </div>
