@@ -1,13 +1,14 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MapPin, Route } from 'lucide-react';
+import { MapPin, Route, Download } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import BeaconManager from '../components/BeaconManager';
 import TrainingGenerator from '../components/TrainingGenerator';
 
 const Index = () => {
   const [currentView, setCurrentView] = useState<'home' | 'beacons' | 'training'>('home');
+  const navigate = useNavigate();
 
   const renderContent = () => {
     switch (currentView) {
@@ -88,7 +89,16 @@ const Index = () => {
 
             {/* Footer */}
             <footer className="bg-green-800 text-white p-4">
-              <div className="max-w-4xl mx-auto text-center">
+              <div className="max-w-4xl mx-auto text-center space-y-3">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate('/install')}
+                  className="bg-white/10 hover:bg-white/20 border-white/30 text-white"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Instalar como App
+                </Button>
                 <p className="text-green-100">© 2024 OrientaTrainer Pro - Software para entrenamientos de orientación</p>
               </div>
             </footer>
