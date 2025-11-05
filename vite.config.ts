@@ -6,8 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: "/orienteering-trailblazer-creator
-/", // 👈 AÑADIDO AQUÍ
+  base: "/orienteering-trailblazer-creator/", // 👈 AÑADIDO AQUÍ
 
   server: {
     host: "::",
